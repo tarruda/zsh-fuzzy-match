@@ -1,6 +1,6 @@
+### this plugin contains snippets/ideas taken from zaw (github.com/zsh-users/zaw)
 function () {
 
-### snippet taken from zaw (github.com/zsh-users/zar)
 zmodload zsh/parameter
 autoload -U is-at-least
 
@@ -13,7 +13,6 @@ else
     local cur_dir="${this_file:h}"
 fi
 fpath+=("${cur_dir}/functions")
-###
 
 local file
 for file in "$cur_dir/functions/"*(.); do

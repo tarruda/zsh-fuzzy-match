@@ -1,3 +1,5 @@
+# functions that handle user key presses
+
 _fuzzy-match-update-line-cursor() {
 	local selected_start_idx selected_end_idx selected_line=$state[selected_line] nl=$state[nl]\
 		hi_selected=$state[hi_selected]
@@ -23,7 +25,7 @@ _fuzzy-match-go-up() {
 }
 
 _fuzzy-match-go-down() {
-	if (( state[selected_line] < 4 )); then
+	if (( state[selected_line] < state[lines] )); then
 		(( state[selected_line]++ ))
 		zle _fuzzy-match-update-line-cursor
 	fi
@@ -38,4 +40,4 @@ zle -N _fuzzy-match-go-up
 zle -N _fuzzy-match-go-down
 zle -N _fuzzy-match-self-insert
 
-unfunction fuzzy-match-utils
+unfunction fuzzy-match-key-handlers
