@@ -17,9 +17,9 @@ _fuzzy-match-walk() {
 	local matches=$3
 	local fpattern=
 	if [[ -n $pattern ]]; then
-		# explicitly set the scope of the '#ia2' flag so it wont apply to
+		# explicitly set the scope of the '#ia1' flag so it wont apply to
 		# the negated patterns
-		fpattern="$cwd/(((#ia2)*${(q)pattern}*)${PRUNE_REL_FILES})${PRUNE_FILES}(.N)"
+		fpattern="$cwd/(((#ia1)*${(q)pattern}*)${PRUNE_REL_FILES})${PRUNE_FILES}(.N)"
 	else
 		fpattern="$cwd/(*${PRUNE_REL_FILES})${PRUNE_FILES}(.N)"
 	fi
