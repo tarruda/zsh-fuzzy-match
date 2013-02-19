@@ -20,7 +20,7 @@ for file in "$cur_dir/functions/"*(.); do
 	${file:t}
 done
 
-local default_keys='^X;' map
+local default_keys='^X' map
 
 for map in emacs viins vicmd; do
 	bindkey -M $map | grep -q 'fuzzy-match' || bindkey -M $map $default_keys fuzzy-match
