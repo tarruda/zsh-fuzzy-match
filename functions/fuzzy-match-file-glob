@@ -80,9 +80,11 @@ _fuzzy-match-file-glob() {
 	_fuzzy-match-load-ignore-patterns
 
 	# read search patterns from stdin, and send results to stdout
-	print "CLEAR"
-	print "APPEND-RESULT:Testing"
-	print "APPEND-RESULT:Line"
-	print "APPEND-RESULT:Navigation"
+	print -N $'CLEAR'
+	print -N $'APPEND-RESULT:Testing'
+	print -N $'APPEND-RESULT:Line'
+	print -N $'APPEND-RESULT:Navigation'
 	read stub
 }
+
+unfunction fuzzy-match-file-glob

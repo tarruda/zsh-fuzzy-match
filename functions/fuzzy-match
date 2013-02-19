@@ -1,6 +1,7 @@
 fuzzy-match() {
 	emulate -L zsh
 	setopt local_options extended_glob
+	unsetopt monitor
 
 	# Save current zle state
 	typeset -Ag old_state state
@@ -13,6 +14,8 @@ fuzzy-match() {
 	if [[ ${#region_highlight} -ne 0 ]]; then 
 		set -a "old_state[region_highlight]" ("${region_highlight[@]}")
 	fi
+	# The first item in 'region_highlight' is used for the line cursor
+	region_highlight=("")
 
 	# TODO find a way to match newlines in subcript glob patterns without using
 	# this hack
@@ -25,7 +28,6 @@ fuzzy-match() {
 		max_lines $(($LINES - 2)) # 1 line for the prompt, another for status
 		max_columns $COLUMNS
 		lines 0
-		incomplete_line ''
 	)
 
 	# initialize configuration
@@ -53,20 +55,22 @@ fuzzy-match() {
 		source_prog="_fuzzy-match-file-glob"
 	fi
 
-	# create ipc named fifo
-	local ipc_pipe=$(mktemp -u --suffix=-fuzzy-match)
+	# create named pipe for reading from the source coprocess
+	local ipc_pipe="/tmp/fuzzy-match-buffer-$RANDOM"
 	while ! mkfifo -m 600 $ipc_pipe; do
-		ipc_pipe=$(mktemp -u --suffix=-fuzzy-match)
+		ipc_pipe="/tmp/fuzzy-match-buffer-$RANDOM"
 	done
 
 	# open the pipe for reading/writing
-	exec 3<> $ipc_pipe
+	# (I couldn't get zle -F to work when opening only for reading, which is what
+	# we need here)
+	exec 3<>$ipc_pipe
 
 	# make zle listen on the pipe
 	zle -F 3 _fuzzy-match-update-results
 
-	# start the source prog with input/output redirected to the ipc_pipe
-	$source_prog $state[max_lines] > $ipc_pipe < $ipc_pipe &!
+	# start the source prog with output redirected to the ipc_pipe
+	{ coproc $source_prog $state[max_lines] > $ipc_pipe }
 	local source_pid=$!
 
 	# Intercept self-insert, {up,down}-line-or-history
@@ -111,10 +115,11 @@ fuzzy-match() {
 }
 
 _fuzzy-match-update-results() {
-	local cmd item
-	if read -u 3 cmd; then
+	local cmd item hi_selected=$state[hi_selected]
+	integer buffer_len
+	while read -t -d $'\0' -r -u $1 cmd; do
 		case $cmd in
-			CLEAR*)
+			CLEAR)
 				POSTDISPLAY=''
 				state[lines]=0
 				state[selected_line]=0
@@ -123,19 +128,19 @@ _fuzzy-match-update-results() {
 			APPEND-RESULT:*)
 				item=${cmd#APPEND\-RESULT\:}
 				POSTDISPLAY+=$'\n'
-				POSTDISPLAY+="$item"
+				POSTDISPLAY+=$item
 				(( state[lines]++ ))
 				if (( state[selected_line] == 0 )); then
 					# automatically select the first line
-					local hi_selected=$state[hi_selected]
+					buffer_len=${#BUFFER}
 					state[selected_line]=1
-					region_highlight[1]="1 $(( $#item + 1)) $hi_selected"
+					region_highlight[1]="$(( 1 + buffer_len )) $(( $#item + 1 + buffer_len )) $hi_selected"
 				fi
 				state[incomplete_line]=''
 				;;
 		esac
-		zle -Rc
-	fi
+	done
+	zle -Rc
 }
 
 zle -N fuzzy-match

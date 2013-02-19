@@ -1,17 +1,18 @@
 # functions that handle user key presses
 
 _fuzzy-match-update-line-cursor() {
-	local selected_start_idx selected_end_idx selected_line=$state[selected_line] nl=$state[nl]\
-		hi_selected=$state[hi_selected]
-	if (( state[selected_line] != state[last_selected_line] )); then
-		# highlight the selected line
-		# start index to highlight (zshparam(1) for help on the subscript
-		# syntax)
-		selected_start_idx=${POSTDISPLAY[(n:((selected_line)):i)$nl]}
-		# end index
-		selected_end_idx=${POSTDISPLAY[(n:((selected_line + 1)):i)$nl]}
-		state[last_selected_line]=$state[selected_line]
-	fi
+	integer selected_start_idx selected_end_idx selected_line=$state[selected_line]\
+	 	buffer_len=${#BUFFER}
+	local hi_selected=$state[hi_selected] nl=$state[nl]
+	# highlight the selected line
+	# start index to highlight (zshparam(1) for help on the subscript
+	# syntax)
+	selected_start_idx=${POSTDISPLAY[(n:((selected_line)):i)$nl]}
+	(( selected_start_idx += buffer_len ))
+	# end index
+	selected_end_idx=${POSTDISPLAY[(n:((selected_line + 1)):i)$nl]}
+	(( selected_end_idx += buffer_len ))
+	state[last_selected_line]=$state[selected_line]
 	PREDISPLAY="$selected_start_idx;$selected_end_idx"
 	region_highlight[1]="$selected_start_idx $selected_end_idx $hi_selected"
 	zle -Rc
@@ -33,6 +34,7 @@ _fuzzy-match-go-down() {
 
 _fuzzy-match-self-insert() {
 	LBUFFER+=${KEYS[-1]}
+	zle _fuzzy-match-update-line-cursor
 }
 
 zle -N _fuzzy-match-update-line-cursor
