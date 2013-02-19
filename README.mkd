@@ -7,7 +7,7 @@ $ echo 'source $HOME/.zsh-fuzzy-match/fuzzy-match.zsh' >> $HOME/.zshrc
 
 ###Usage
 
-- press ^H (the default binding, you can override with something like 'bindkey "^P" fuzzy-match' before sourcing the main file)
+- press ^T (the default binding, you can override with something like 'bindkey "^P" fuzzy-match' before sourcing the main file)
 - type a filename
 - move cursor with arrows
 - use enter to accept

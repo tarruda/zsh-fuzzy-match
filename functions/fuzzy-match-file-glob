@@ -5,7 +5,12 @@
 _fuzzy-match-find() {
 	print -N "CLEAR"
 	if [[ -n $1 ]]; then
-		_fuzzy-match-walk $CWD $1 0
+		# FIXME Need to propertly escape so it wont break the constructed
+		# 'fpattern'. For now just replacing characters like '\' with ?
+		# Also, probably need to do some kind of processing on user input, so
+		# characters like '\' will in fact match sub directories
+		local escaped=${1//\//\?}
+		_fuzzy-match-walk $CWD $escaped 0
 	else
 		_fuzzy-match-walk $CWD "" 0
 	fi
@@ -19,7 +24,7 @@ _fuzzy-match-walk() {
 	if [[ -n $pattern ]]; then
 		# explicitly set the scope of the '#ia1' flag so it wont apply to
 		# the negated patterns
-		fpattern="$cwd/(((#ia1)*${(q)pattern}*)${PRUNE_REL_FILES})${PRUNE_FILES}(.N)"
+		fpattern="$cwd/(((#ia1)*${pattern}*)${PRUNE_REL_FILES})${PRUNE_FILES}(.N)"
 	else
 		fpattern="$cwd/(*${PRUNE_REL_FILES})${PRUNE_FILES}(.N)"
 	fi
