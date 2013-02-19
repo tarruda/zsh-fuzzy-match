@@ -13,7 +13,6 @@ _fuzzy-match-update-line-cursor() {
 	selected_end_idx=${POSTDISPLAY[(n:((selected_line + 1)):i)$nl]}
 	(( selected_end_idx += buffer_len ))
 	state[last_selected_line]=$state[selected_line]
-	PREDISPLAY="$selected_start_idx;$selected_end_idx"
 	region_highlight[1]="$selected_start_idx $selected_end_idx $hi_selected"
 	zle -Rc
 }
@@ -34,6 +33,7 @@ _fuzzy-match-go-down() {
 
 _fuzzy-match-self-insert() {
 	LBUFFER+=${KEYS[-1]}
+	print -p -N 'RESTART'
 	zle _fuzzy-match-update-line-cursor
 }
 

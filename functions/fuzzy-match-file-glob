@@ -3,11 +3,15 @@
 #
 
 _fuzzy-match-find() {
-	echo "CLEAR"
-	if [ -n "$1" ]; then
-		_fuzzy-match-walk "$CWD" "$1" 0
+	TRAPTERM() {
+		sleep 5
+		return $(( 128 + $1 ))
+	}
+	print -N "CLEAR"
+	if [[ -n $1 ]]; then
+		_fuzzy-match-walk $CWD $1 0
 	else
-		_fuzzy-match-walk "$CWD" "" 0
+		_fuzzy-match-walk $CWD "" 0
 	fi
 	sleep 5
 }
@@ -17,7 +21,7 @@ _fuzzy-match-walk() {
 	local pattern=$2
 	local matches=$3
 	local fpattern=
-	if [ -n "$pattern" ]; then
+	if [[ -n $pattern ]]; then
 		# explicitly set the scope of the '#ia2' flag so it wont apply to
 		# the negated patterns
 		fpattern="$cwd/(((#ia2)*${(q)pattern}*)${PRUNE_REL_FILES})${PRUNE_FILES}(.N)"
@@ -26,7 +30,7 @@ _fuzzy-match-walk() {
 	fi
 	local dpattern="$cwd/(*${PRUNE_REL_DIRS})${PRUNE_DIRS}(/N)"
 	for file in ${~fpattern}; do
-		echo "APPEND-RESULT:$file"
+		print -N "APPEND-RESULT:$file"
 		# no need to keep searching after the screen is filled with results
 		[ $((++matches)) -ge $MAX_RESULTS ] && sleep 5 && exit
 	done
@@ -36,28 +40,27 @@ _fuzzy-match-walk() {
 }
 
 _fuzzy-match-load-ignore-patterns() {
-	CWD="$PWD"
 	# Load the user ignore  patterns
 	PRUNE_REL_DIRS=""
 	PRUNE_REL_FILES=""
 	PRUNE_DIRS=""
 	PRUNE_FILES=""
-	if [ -r "$CWD/.fuzzy_ignore" ]; then
-		exec 3<"$CWD/.fuzzy_ignore"
+	if [[ -r "$CWD/.fuzzy-match-ignore" ]]; then
+		exec 3<"$CWD/.fuzzy-match-ignore"
 		while read -u 3 ignore_pattern; do
 			# strip line comments in the ignore file
 			local ignore_pattern="${ignore_pattern%%\#*}"
-			[ -z $ignore_pattern ] && continue
-			if [ "$ignore_pattern" -pcre-match ^/ ]; then
+			[[ -z $ignore_pattern ]] && continue
+			if [[ $ignore_pattern -pcre-match ^/ ]]; then
 				# relative to the base directory
-				if [ "$ignore_pattern" -pcre-match /$ ]; then
+				if [[ $ignore_pattern -pcre-match /$ ]]; then
 					PRUNE_DIRS="$PRUNE_DIRS~$CWD${ignore_pattern%/}"
 				else
 					PRUNE_FILES="$PRUNE_FILES~$CWD$ignore_pattern"
 				fi
 			else
 				# relative to the current directory being scanned
-				if [ "$ignore_pattern" -pcre-match /$ ]; then
+				if [[ $ignore_pattern -pcre-match /$ ]]; then
 					PRUNE_REL_DIRS="$PRUNE_REL_DIRS~${ignore_pattern%/}"
 				else
 					PRUNE_REL_FILES="$PRUNE_REL_FILES~$ignore_pattern"
@@ -72,19 +75,50 @@ _fuzzy-match-load-ignore-patterns() {
 
 _fuzzy-match-file-glob() {
 	zmodload zsh/pcre
-	setopt extendedglob
-	setopt globdots
+	setopt extendedglob globdots
 
 	export MAX_RESULTS=$1
 	export CWD="$(pwd)"
 	_fuzzy-match-load-ignore-patterns
 
-	# read search patterns from stdin, and send results to stdout
-	print -N $'CLEAR'
-	print -N $'APPEND-RESULT:Testing'
-	print -N $'APPEND-RESULT:Line'
-	print -N $'APPEND-RESULT:Navigation'
-	read stub
+	local cmd finder_pid
+	integer restarting=0 # semaphore for avoiding stacked RESTART commands
+
+	# start the finder without a pattern, so the list will be filled when the
+	# widget starts
+	_fuzzy-match-find &
+	finder_pid=$!
+	while read -d $'\0' -r cmd; do
+		case $cmd in
+			PATTERN:*)
+				restarting=0
+				# restart the find using this pattern
+				_fuzzy-match-find ${cmd#PATTERN\:} &
+				finder_pid=$!
+				;;
+			RESTART)
+				kill $finder_pid &> /dev/null
+				if kill -0 $finder_pid &> /dev/null; then
+					(( restarting == 1 )) && continue # already restarting, just ignore
+					restarting=1
+					{
+						# this is done in the background so zle can continue to read keys
+						# without buffering RESTART commands
+						while kill -0 $finder_pid &> /dev/null; do
+							sleep 0.2
+						done
+						# Done waiting for the finder, request the current pattern and
+						# continue
+						print -N 'GET-PATTERN'
+					} &!
+				else
+					# finder has already exited, so we request the pattern and wait for
+					# response
+					print -N 'GET-PATTERN'
+				fi
+				;;
+		esac
+	done
 }
 
 unfunction fuzzy-match-file-glob

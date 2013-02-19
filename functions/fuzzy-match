@@ -14,8 +14,6 @@ fuzzy-match() {
 	if [[ ${#region_highlight} -ne 0 ]]; then 
 		set -a "old_state[region_highlight]" ("${region_highlight[@]}")
 	fi
-	# The first item in 'region_highlight' is used for the line cursor
-	region_highlight=("")
 
 	# TODO find a way to match newlines in subcript glob patterns without using
 	# this hack
@@ -25,9 +23,8 @@ fuzzy-match() {
 		nl '[[:IFS:]]'
 		selected_line 0
 		last_selected_line 0
-		max_lines $(($LINES - 2)) # 1 line for the prompt, another for status
-		max_columns $COLUMNS
 		lines 0
+		max_lines $(( LINES - 4 ))
 	)
 
 	# initialize configuration
@@ -38,17 +35,28 @@ fuzzy-match() {
 	zstyle -s ':fuzzy-match:highlight' title "state[hi_title]" ||\
 	 	state[hi_title]='bold'
 
+	# The first item in 'region_highlight' is used for the line cursor, second for
+	# the title
+	PREDISPLAY=$'\nFuzzy match: '
+	region_highlight=("" "P1 13 $state[hi_title]")
+
 	# initialize source program
 	#
-	# it can be any program that will listen on standard input for search
-	# patterns, and send back results to standard output.
+	# it can be any program that understands a simple protocol via stdio
 	#
-	# there's no input protocol, each input line represents a search pattern. if
-	# the source is still searching for
+	# The source prog can send the following messages:
 	#
-	# the output protocol only two possible types of message:
-	# CLEAR: clear the results
-	# APPEND-RESULT: append a single matched result
+	#		CLEAR - Clears the output list
+	#		APPEND-RESULT:[result] - Appends a single result to the output list
+	#		GET-PATTERN - Queries for the currently typed pattern
+	#	
+	#	It should also accept the following:
+	#	
+	#		PATTERN:[pattern] - This is the response to GET-PATTERN
+	#		RESTART - Stop yielding matches and start again(this happens when the
+	#							user modified the text)
+	#
+	# Every message in the protocol should be terminated with the null byte(0)
 	#
 	local source_prog=$1
 	if [[ -z $source_prog ]]; then
@@ -110,8 +118,6 @@ fuzzy-match() {
 
 	# if interrupted, just exit and don't do anything else
 	(( edit_status )) && zle send-break
-
-	printf "done"
 }
 
 _fuzzy-match-update-results() {
@@ -126,6 +132,7 @@ _fuzzy-match-update-results() {
 				state[last_selected_line]=0
 				;;
 			APPEND-RESULT:*)
+				(( state[lines] == state[max_lines] )) && continue # discard
 				item=${cmd#APPEND\-RESULT\:}
 				POSTDISPLAY+=$'\n'
 				POSTDISPLAY+=$item
@@ -138,9 +145,12 @@ _fuzzy-match-update-results() {
 				fi
 				state[incomplete_line]=''
 				;;
+			GET-PATTERN) # this may come with leading garbage from job control
+				print -p -N "PATTERN:$BUFFER"
+				;;
 		esac
+		zle -Rc
 	done
-	zle -Rc
 }
 
 zle -N fuzzy-match
