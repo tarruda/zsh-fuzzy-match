@@ -5,9 +5,9 @@ $ git clone git://github.com/tarruda/zsh-fuzzy-match.git $HOME/.zsh-fuzzy-match
 $ echo 'source $HOME/.zsh-fuzzy-match/fuzzy-match.zsh' >> $HOME/.zshrc
 ```
 
-### Usage
+###Usage
 
-- press ^X(default binding)
+- press ^X (the default binding, you can override with something like 'bindkey "^P" fuzzy-match' before sourcing the main file)
 - type a filename
 - move cursor with arrows
 - use enter to accept
