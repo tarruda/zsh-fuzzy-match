@@ -1,0 +1,70 @@
+# some snippets/ideas were taken from github/zsh-users/zaw
+fuzzy-match() {
+	emulate -L zsh
+	setopt local_options extended_glob
+
+	# Save current zle state
+	typeset -Ag old_state state
+	old_state=(
+		LBUFFER "$LBUFFER"
+		RBUFFER "$RBUFFER"
+		PREDISPLAY "$PREDISPLAY"
+		POSTDISPLAY "$POSTDISPLAY"
+	)
+	if [[ ${#region_highlight} -ne 0 ]]; then 
+		set -a "old_state[region_highlight]" ("${region_highlight[@]}")
+	fi
+
+	# TODO find a way to match newlines in subcript glob patterns without using
+	# this hack
+ 	IFS=$'\n'
+	# widget-specific state, global for easy sharing across functions.
+	state=(
+		nl '[[:IFS:]]'
+		selected_line 1
+		last_selected_line 0
+	)
+
+	# initialize configuration
+	zstyle -s ':fuzzy-match:highlight' selected "state[hi_selected]" ||\
+	 	state[hi_selected]='standout'
+	zstyle -s ':fuzzy-match:highlight' matched "state[hi_matched]" ||\
+	 	state[hi_matched]='fg=magenta,underline'
+	zstyle -s ':fuzzy-match:highlight' title "state[hi_title]" ||\
+	 	state[hi_title]='bold'
+
+	POSTDISPLAY=$'\nTesting\nline\nnavigation\n'
+
+	# Intercept self-insert, {up,down}-line-or-history
+	zle -N self-insert _fuzzy-match-self-insert
+	zle -N up-line-or-history _fuzzy-match-go-up
+	zle -N down-line-or-history _fuzzy-match-go-down
+
+	# use recursive edit, so we inherit the user keymap and override only what is
+	# needed
+	zle recursive-edit
+	local edit_status=$?
+
+	# restore default widgets
+	zle -A .self-insert self-insert
+	zle -A .up-line-or-history up-line-or-history
+	zle -A .down-line-or-history down-line-or-history
+
+	# restore initial zle state
+	LBUFFER="$old_state[LBUFFER]"
+	RBUFFER="$old_state[RBUFFER]"
+	PREDISPLAY="$old_state[PREDISPLAY]"
+	POSTDISPLAY="$old_state[POSTDISPLAY]"
+	if [[ -n $old_state[region_highlight] ]]; then
+		region_highlight=("$old_state[region_highlight][@]")
+	fi
+	zle -Rc
+	unset old_state state IFS
+
+	# if interrupted, just exit and don't do anything else
+	(( edit_status )) && zle send-break
+
+	printf "done"
+}
+
+zle -N fuzzy-match

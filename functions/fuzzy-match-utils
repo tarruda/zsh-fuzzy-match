@@ -1,0 +1,41 @@
+_fuzzy-match-update-line-cursor() {
+	local selected_start_idx selected_end_idx selected_line=$state[selected_line] nl=$state[nl]\
+		hi_selected=$state[hi_selected]
+	if (( state[selected_line] != state[last_selected_line] )); then
+		# highlight the selected line
+		# start index to highlight (zshparam(1) for help on the subscript
+		# syntax)
+		selected_start_idx=${POSTDISPLAY[(n:((selected_line)):i)$nl]}
+		# end index
+		selected_end_idx=${POSTDISPLAY[(n:((selected_line + 1)):i)$nl]}
+		state[last_selected_line]=$state[selected_line]
+	fi
+	PREDISPLAY="$selected_start_idx;$selected_end_idx"
+	region_highlight[1]="$selected_start_idx $selected_end_idx $hi_selected"
+	zle -Rc
+}
+
+_fuzzy-match-go-up() {
+	if (( state[selected_line] > 1)); then
+		(( state[selected_line]-- ))
+		zle _fuzzy-match-update-line-cursor
+	fi
+}
+
+_fuzzy-match-go-down() {
+	if (( state[selected_line] < 4 )); then
+		(( state[selected_line]++ ))
+		zle _fuzzy-match-update-line-cursor
+	fi
+}
+
+_fuzzy-match-self-insert() {
+	LBUFFER+=${KEYS[-1]}
+}
+
+zle -N _fuzzy-match-update-line-cursor
+zle -N _fuzzy-match-go-up
+zle -N _fuzzy-match-go-down
+zle -N _fuzzy-match-self-insert
+
+unfunction fuzzy-match-utils
