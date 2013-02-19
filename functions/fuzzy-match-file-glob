@@ -3,17 +3,12 @@
 #
 
 _fuzzy-match-find() {
-	TRAPTERM() {
-		sleep 5
-		return $(( 128 + $1 ))
-	}
 	print -N "CLEAR"
 	if [[ -n $1 ]]; then
 		_fuzzy-match-walk $CWD $1 0
 	else
 		_fuzzy-match-walk $CWD "" 0
 	fi
-	sleep 5
 }
 
 _fuzzy-match-walk() {
@@ -30,9 +25,9 @@ _fuzzy-match-walk() {
 	fi
 	local dpattern="$cwd/(*${PRUNE_REL_DIRS})${PRUNE_DIRS}(/N)"
 	for file in ${~fpattern}; do
-		print -N "APPEND-RESULT:$file"
+		print -N "APPEND:$file"
 		# no need to keep searching after the screen is filled with results
-		[ $((++matches)) -ge $MAX_RESULTS ] && sleep 5 && exit
+		[ $((++matches)) -ge $MAX_RESULTS ] && exit
 	done
 	for dir in ${~dpattern}; do
 		_fuzzy-match-walk "$dir" "$pattern" "$matches"
@@ -86,14 +81,14 @@ _fuzzy-match-file-glob() {
 
 	# start the finder without a pattern, so the list will be filled when the
 	# widget starts
-	_fuzzy-match-find &
+	_fuzzy-match-find &!
 	finder_pid=$!
-	while read -d $'\0' -r cmd; do
+	while read -d $'\0' -r cmd &> /dev/null; do
 		case $cmd in
-			PATTERN:*)
+			PATTERN*)
 				restarting=0
 				# restart the find using this pattern
-				_fuzzy-match-find ${cmd#PATTERN\:} &
+				_fuzzy-match-find ${cmd#PATTERN\:} &!
 				finder_pid=$!
 				;;
 			RESTART)
@@ -109,12 +104,12 @@ _fuzzy-match-file-glob() {
 						done
 						# Done waiting for the finder, request the current pattern and
 						# continue
-						print -N 'GET-PATTERN'
+						print -N 'GET'
 					} &!
 				else
 					# finder has already exited, so we request the pattern and wait for
 					# response
-					print -N 'GET-PATTERN'
+					print -N 'GET'
 				fi
 				;;
 		esac

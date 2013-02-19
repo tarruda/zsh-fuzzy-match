@@ -1,3 +1,19 @@
+# Main widget logic.
+# The source can be any program that understands a simple protocol via stdio
+#
+# It can send:
+#
+#		CLEAR - Clears the output list
+#		APPEND:[result] - Appends a single result to the output list
+#		GET - Queries for the currently typed pattern
+#	
+#	It should also accept:
+#	
+#		PATTERN:[pattern] - This is the response to GET
+#		RESTART - Stop yielding matches and start again(this happens when the
+#							user modified the text)
+#
+# Every message in the protocol should be terminated with the null byte(0)
 fuzzy-match() {
 	emulate -L zsh
 	setopt local_options extended_glob
@@ -6,10 +22,10 @@ fuzzy-match() {
 	# Save current zle state
 	typeset -Ag old_state state
 	old_state=(
-		LBUFFER "$LBUFFER"
-		RBUFFER "$RBUFFER"
-		PREDISPLAY "$PREDISPLAY"
-		POSTDISPLAY "$POSTDISPLAY"
+	LBUFFER "$LBUFFER"
+	RBUFFER "$RBUFFER"
+	PREDISPLAY "$PREDISPLAY"
+	POSTDISPLAY "$POSTDISPLAY"
 	)
 	if [[ ${#region_highlight} -ne 0 ]]; then 
 		set -a "old_state[region_highlight]" ("${region_highlight[@]}")
@@ -17,23 +33,23 @@ fuzzy-match() {
 
 	# TODO find a way to match newlines in subcript glob patterns without using
 	# this hack
- 	IFS=$'\n'
+	IFS=$'\n'
 	# widget-specific state, global for easy sharing across functions.
 	state=(
-		nl '[[:IFS:]]'
-		selected_line 0
-		last_selected_line 0
-		lines 0
-		max_lines $(( LINES - 4 ))
+	nl '[[:IFS:]]'
+	selected_line 0
+	last_selected_line 0
+	lines 0
+	max_lines $(( LINES - 3 ))
 	)
 
 	# initialize configuration
 	zstyle -s ':fuzzy-match:highlight' selected "state[hi_selected]" ||\
-	 	state[hi_selected]='standout'
+		state[hi_selected]='standout'
 	zstyle -s ':fuzzy-match:highlight' matched "state[hi_matched]" ||\
-	 	state[hi_matched]='fg=magenta,underline'
+		state[hi_matched]='fg=magenta,underline'
 	zstyle -s ':fuzzy-match:highlight' title "state[hi_title]" ||\
-	 	state[hi_title]='bold'
+		state[hi_title]='bold'
 
 	# The first item in 'region_highlight' is used for the line cursor, second for
 	# the title
@@ -41,45 +57,22 @@ fuzzy-match() {
 	region_highlight=("" "P1 13 $state[hi_title]")
 
 	# initialize source program
-	#
-	# it can be any program that understands a simple protocol via stdio
-	#
-	# The source prog can send the following messages:
-	#
-	#		CLEAR - Clears the output list
-	#		APPEND-RESULT:[result] - Appends a single result to the output list
-	#		GET-PATTERN - Queries for the currently typed pattern
-	#	
-	#	It should also accept the following:
-	#	
-	#		PATTERN:[pattern] - This is the response to GET-PATTERN
-	#		RESTART - Stop yielding matches and start again(this happens when the
-	#							user modified the text)
-	#
-	# Every message in the protocol should be terminated with the null byte(0)
-	#
 	local source_prog=$1
 	if [[ -z $source_prog ]]; then
 		source_prog="_fuzzy-match-file-glob"
 	fi
 
-	# create named pipe for reading from the source coprocess
-	local ipc_pipe="/tmp/fuzzy-match-buffer-$RANDOM"
-	while ! mkfifo -m 600 $ipc_pipe; do
-		ipc_pipe="/tmp/fuzzy-match-buffer-$RANDOM"
-	done
+	# start the source prog as a coprocess
+	coproc $source_prog $state[max_lines]
+	local source_pid=$! 
+	disown
+	local coproc_out
 
-	# open the pipe for reading/writing
-	# (I couldn't get zle -F to work when opening only for reading, which is what
-	# we need here)
-	exec 3<>$ipc_pipe
+	# copy coproc fd to $coproc_out so it can be used by zle -F
+	exec {coproc_out}<&p
 
-	# make zle listen on the pipe
-	zle -F 3 _fuzzy-match-update-results
-
-	# start the source prog with output redirected to the ipc_pipe
-	{ coproc $source_prog $state[max_lines] > $ipc_pipe }
-	local source_pid=$!
+	# make zle invoke _fuzzy-match-coproc-receive
+	zle -F $coproc_out _fuzzy-match-coproc-receive
 
 	# Intercept self-insert, {up,down}-line-or-history
 	zle -N self-insert _fuzzy-match-self-insert
@@ -113,17 +106,15 @@ fuzzy-match() {
 
 	# cleanup source process
 	kill $source_pid &> /dev/null
-	exec 3>&-
-	rm -f $ipc_pipe
 
 	# if interrupted, just exit and don't do anything else
 	(( edit_status )) && zle send-break
 }
 
-_fuzzy-match-update-results() {
+_fuzzy-match-coproc-receive() {
 	local cmd item hi_selected=$state[hi_selected]
 	integer buffer_len
-	while read -t -d $'\0' -r -u $1 cmd; do
+	if read -d $'\0' -r -u $1 cmd; then
 		case $cmd in
 			CLEAR)
 				POSTDISPLAY=''
@@ -131,9 +122,9 @@ _fuzzy-match-update-results() {
 				state[selected_line]=0
 				state[last_selected_line]=0
 				;;
-			APPEND-RESULT:*)
-				(( state[lines] == state[max_lines] )) && continue # discard
-				item=${cmd#APPEND\-RESULT\:}
+			APPEND*)
+				(( state[lines] == state[max_lines] )) && return
+				item=${cmd#APPEND\:}
 				POSTDISPLAY+=$'\n'
 				POSTDISPLAY+=$item
 				(( state[lines]++ ))
@@ -145,12 +136,12 @@ _fuzzy-match-update-results() {
 				fi
 				state[incomplete_line]=''
 				;;
-			GET-PATTERN) # this may come with leading garbage from job control
+			GET) # this may come with leading garbage from job control
 				print -p -N "PATTERN:$BUFFER"
 				;;
 		esac
 		zle -Rc
-	done
+	fi
 }
 
 zle -N fuzzy-match
