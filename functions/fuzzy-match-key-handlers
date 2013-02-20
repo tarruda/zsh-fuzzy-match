@@ -55,11 +55,12 @@ _fuzzy-match-delete-char() {
 
 _fuzzy-match-accept-line() {
 	# extract the highlighted line
-	local highlighted start end
+	local highlighted start end buffer_len=$#BUFFER
 	highlighted=(${(z)region_highlight[1]})
-	start=$(( highlighted[1] + 1 ))
-	end=highlighted[2]
+	start=$(( highlighted[1] + 1 - buffer_len ))
+	end=$(( highlighted[2] - buffer_len ))
 	state[text]="${POSTDISPLAY[$start,$end]}"
+	# exit the nested zle editor
 	zle .accept-line
 }
 
