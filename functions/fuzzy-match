@@ -121,7 +121,7 @@ fuzzy-match() {
 
 _fuzzy-match-coproc-receive() {
 	local cmd item hi_selected=$state[hi_selected]
-	integer buffer_len
+	integer buffer_len base_idx
 	if read -d $'\0' -r -u $1 cmd; then
 		case $cmd in
 			CLEAR)
@@ -129,18 +129,21 @@ _fuzzy-match-coproc-receive() {
 				state[lines]=0
 				state[selected_line]=0
 				state[last_selected_line]=0
+				region_highlight=$region_highlight[1,2]
 				;;
-			APPEND:*)
+			APPEND*)
 				(( state[lines] == state[max_lines] )) && return
+				buffer_len=${#BUFFER}
+				(( base_idx = buffer_len + 1 ))
 				item=${cmd#APPEND\:}
+				_fuzzy-match-highlight-item $(( buffer_len + $#POSTDISPLAY )) $item
 				POSTDISPLAY+=$'\n'
 				POSTDISPLAY+=$item
 				(( state[lines]++ ))
 				if (( state[selected_line] == 0 )); then
 					# automatically select the first line
-					buffer_len=${#BUFFER}
 					state[selected_line]=1
-					region_highlight[1]="$(( 1 + buffer_len )) $(( $#item + 1 + buffer_len )) $hi_selected"
+					region_highlight[1]="$base_idx $(( base_idx + $#item )) $hi_selected"
 				fi
 				state[incomplete_line]=''
 				;;
@@ -151,5 +154,15 @@ _fuzzy-match-coproc-receive() {
 		zle -Rc
 	fi
 }
+
+# highlight a single result
+_fuzzy-match-highlight-item() {
+	local end_idx start_idx=$1 item=$2 hi_matched=$state[hi_matched] 
+	region_highlight+="$((start_idx + 2)) $((start_idx + $#item)) $hi_matched"
+	# (( start_idx += ${item[(i)${~BUFFER}]} )) 
+	# (( end_idx = start_idx + $#item ))
+	# region_highlight+="$start_idx $end_idx $hi_matched"
+}
+
 
 zle -N fuzzy-match
