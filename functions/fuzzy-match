@@ -155,13 +155,18 @@ _fuzzy-match-coproc-receive() {
 	fi
 }
 
-# highlight a single result
+# highlight a single result, this constructs a pattern with the buffer escaped
+# contents, and appends the #ia1 flags for approximate/case insensitive
+# matching. also, since there seems to be no easy way to find the exact match
+# length, we use the buffer length for finding that out
 _fuzzy-match-highlight-item() {
-	local end_idx start_idx=$1 item=$2 hi_matched=$state[hi_matched] 
-	region_highlight+="$((start_idx + 2)) $((start_idx + $#item)) $hi_matched"
-	# (( start_idx += ${item[(i)${~BUFFER}]} )) 
-	# (( end_idx = start_idx + $#item ))
-	# region_highlight+="$start_idx $end_idx $hi_matched"
+	local idx len end_idx start_idx=$1 item=$2 hi_matched=$state[hi_matched]\
+	 	pattern="(#ia1)(${${BUFFER:q}//\//?})"
+	idx=${item[(I)$pattern]}
+	(( idx > $#item )) && return
+	(( start_idx += idx )) 
+	(( end_idx = start_idx + $#BUFFER ))
+	region_highlight+="$start_idx $end_idx $hi_matched"
 }
 
 

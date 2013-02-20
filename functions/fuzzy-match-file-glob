@@ -9,7 +9,7 @@ _fuzzy-match-find() {
 		# 'fpattern'. For now just replacing characters like '\' with ?
 		# Also, probably need to do some kind of processing on user input, so
 		# characters like '\' will in fact match sub directories
-		local escaped=${1//\//\?}
+		local escaped=${${1:q}//\//?}
 		_fuzzy-match-walk $CWD $escaped 0
 	else
 		_fuzzy-match-walk $CWD "" 0
