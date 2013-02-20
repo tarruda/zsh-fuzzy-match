@@ -52,6 +52,7 @@ _fuzzy-match-load-ignore-patterns() {
 			while read -u 3 ignore_pattern; do
 				# strip line comments in the ignore file
 				local ignore_pattern="${ignore_pattern%%\#*}"
+				ignore_pattern="${ignore_pattern%% #}"
 				[[ -z $ignore_pattern ]] && continue
 				if [[ $ignore_pattern -pcre-match ^/ ]]; then
 					# relative to the base directory
