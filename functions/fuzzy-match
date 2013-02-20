@@ -1,5 +1,7 @@
 # Main widget logic.
-# The source can be any program that understands a simple protocol via stdio
+#
+# Theoretically, this can be extended by providing a source,
+# which can be any program that understands a simple protocol via stdio
 #
 # It can send:
 #
@@ -49,7 +51,7 @@ fuzzy-match() {
 	zstyle -s ':fuzzy-match:highlight' selected "state[hi_selected]" ||\
 		state[hi_selected]='standout'
 	zstyle -s ':fuzzy-match:highlight' matched "state[hi_matched]" ||\
-		state[hi_matched]='fg=magenta,underline'
+		state[hi_matched]='fg=green,underline'
 	zstyle -s ':fuzzy-match:highlight' title "state[hi_title]" ||\
 		state[hi_title]='bold'
 
@@ -135,6 +137,9 @@ fuzzy-match() {
 			zle accept-line
 		else
 			# append the filename and let the user confirm
+			if [[ $LBUFFER[-1] != $' ' ]]; then
+				LBUFFER+=$' '
+			fi
 			LBUFFER+=${text:q}
 			zle -Rc
 		fi
@@ -186,7 +191,11 @@ _fuzzy-match-coproc-receive() {
 _fuzzy-match-highlight-item() {
 	local idx len end_idx start_idx=$1 item=$2 hi_matched=$state[hi_matched]\
 		pattern="(#ia1)(${${BUFFER:q}//\//?})"
-	idx=${item[(I)$pattern]}
+	# find the index of the first match after the last '/' (the filename)
+	idx=${${item##*/}[(i)$pattern]}
+	if (( ${item[(i)/]} <= $#item )); then
+		(( idx += ${#${item%/*}} + 1 ))
+	fi
 	(( idx > $#item )) && return
 	(( start_idx += idx )) 
 	(( end_idx = start_idx + $#BUFFER ))

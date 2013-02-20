@@ -45,30 +45,33 @@ _fuzzy-match-load-ignore-patterns() {
 	PRUNE_REL_FILES=""
 	PRUNE_DIRS=""
 	PRUNE_FILES=""
-	if [[ -r "$CWD/.fuzzy-match-ignore" ]]; then
-		exec 3<"$CWD/.fuzzy-match-ignore"
-		while read -u 3 ignore_pattern; do
-			# strip line comments in the ignore file
-			local ignore_pattern="${ignore_pattern%%\#*}"
-			[[ -z $ignore_pattern ]] && continue
-			if [[ $ignore_pattern -pcre-match ^/ ]]; then
-				# relative to the base directory
-				if [[ $ignore_pattern -pcre-match /$ ]]; then
-					PRUNE_DIRS="$PRUNE_DIRS~$CWD${ignore_pattern%/}"
+	local rc
+	for rc in "$HOME/.global.fuzzy-match-ignore" "$CWD/.fuzzy-match-ignore"; do
+		if [[ -r $rc ]]; then
+			exec 3<$rc
+			while read -u 3 ignore_pattern; do
+				# strip line comments in the ignore file
+				local ignore_pattern="${ignore_pattern%%\#*}"
+				[[ -z $ignore_pattern ]] && continue
+				if [[ $ignore_pattern -pcre-match ^/ ]]; then
+					# relative to the base directory
+					if [[ $ignore_pattern -pcre-match /$ ]]; then
+						PRUNE_DIRS="$PRUNE_DIRS~$CWD${ignore_pattern%/}"
+					else
+						PRUNE_FILES="$PRUNE_FILES~$CWD$ignore_pattern"
+					fi
 				else
-					PRUNE_FILES="$PRUNE_FILES~$CWD$ignore_pattern"
+					# relative to the current directory being scanned
+					if [[ $ignore_pattern -pcre-match /$ ]]; then
+						PRUNE_REL_DIRS="$PRUNE_REL_DIRS~${ignore_pattern%/}"
+					else
+						PRUNE_REL_FILES="$PRUNE_REL_FILES~$ignore_pattern"
+					fi
 				fi
-			else
-				# relative to the current directory being scanned
-				if [[ $ignore_pattern -pcre-match /$ ]]; then
-					PRUNE_REL_DIRS="$PRUNE_REL_DIRS~${ignore_pattern%/}"
-				else
-					PRUNE_REL_FILES="$PRUNE_REL_FILES~$ignore_pattern"
-				fi
-			fi
-		done
-		exec 3>&-
-	fi
+			done
+			exec 3>&-
+		fi
+	done
 	# shared this with the finder process
 	export PRUNE_DIRS PRUNE_FILES PRUNE_REL_DIRS PRUNE_REL_FILES
 }

@@ -7,21 +7,30 @@ $ echo 'source $HOME/.zsh-fuzzy-match/fuzzy-match.zsh' >> $HOME/.zshrc
 
 ###Basic Usage
 
-- press ^T (the default binding, you can override with something like 'bindkey "^P" fuzzy-match' before sourcing the main file)
-- type a filename
-- move cursor with arrows
-- use enter to accept
+^T (CTRL + T) is the default binding to activate the widget, it can be overriden
+by invoking 'bindkey '[KEYS]' fuzzy-match' before sourcing the main file.
+
+When the widget is running, type parts of a filename and it will list zsh glob
+matches, which can be selected using arrows.
+
+If you invoke the widget with an empty zle buffer, it will open the file in your
+$EDITOR.
+
+You can also start typing a command(eg: 'rm' or 'vi') and then invoke the
+widget, when the filename is selected it will be appended to your command line
 
 ###Configuration
 
-If the working directory contains a file named '.fuzzy-match-ignore', it will be
-read and the lines will be used as ignore patterns(zsh patterns) with the following
-rules:
+Ignore patterns can be specified with a '.fuzzy-match-ignore' in the working
+directory or '.global.fuzzy-match-ignore' in home directory.
+
+Each line should contain a zsh-like ignore pattern, with the following remarks:
 
 - If starts with a '/', the pattern is considered relative to the starting
   directory instead of the directory currently being scanned
 - If ends with a '/', the pattern is a directory-ignore pattern(it wont descend
   into directories that match the pattern)
+- Single line comments are allowed with '#'
 
 ####Examples:
 
@@ -35,4 +44,16 @@ Ignore all .min.js/.min.css files:
 
 ```
 *.min.(css|js)
+```
+
+Here's a good .global.fuzzy-match-ignore:
+
+```
+/.(git|svn|bzr|hg)/  # VCS special dir
+/node_modules/       # node.js dependencies directory
+*.min.(js|css)       # minified files
+*~                   # vim undo files
+*.swp                # vim swap files
+*.pyc                # python compiled
+*.zwc                # zsh compiled
 ```
