@@ -20,26 +20,43 @@ _fuzzy-match-update-line-cursor() {
 _fuzzy-match-go-up() {
 	if (( state[selected_line] > 1)); then
 		(( state[selected_line]-- ))
-		zle _fuzzy-match-update-line-cursor
+		_fuzzy-match-update-line-cursor
 	fi
 }
 
 _fuzzy-match-go-down() {
 	if (( state[selected_line] < state[lines] )); then
 		(( state[selected_line]++ ))
-		zle _fuzzy-match-update-line-cursor
+		_fuzzy-match-update-line-cursor
 	fi
 }
 
 _fuzzy-match-self-insert() {
 	LBUFFER+=${KEYS[-1]}
 	print -p -N 'RESTART'
-	zle _fuzzy-match-update-line-cursor
+	_fuzzy-match-update-line-cursor
 }
 
-zle -N _fuzzy-match-update-line-cursor
-zle -N _fuzzy-match-go-up
-zle -N _fuzzy-match-go-down
-zle -N _fuzzy-match-self-insert
+_fuzzy-match-backward-delete-char() {
+	if (( $#LBUFFER )); then
+		LBUFFER=${LBUFFER[1,-2]}
+		print -p -N 'RESTART'
+		_fuzzy-match-update-line-cursor
+	fi
+}
+
+_fuzzy-match-delete-char() {
+	if (( $#RBUFFER )); then
+		RBUFFER=${RBUFFER[2,-1]}
+		print -p -N 'RESTART'
+		_fuzzy-match-update-line-cursor
+	fi
+}
+
+
+# zle -N _fuzzy-match-update-line-cursor
+# zle -N _fuzzy-match-go-up
+# zle -N _fuzzy-match-go-down
+# zle -N _fuzzy-match-self-insert
 
 unfunction fuzzy-match-key-handlers

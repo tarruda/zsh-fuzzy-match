@@ -74,8 +74,12 @@ fuzzy-match() {
 	# make zle invoke _fuzzy-match-coproc-receive
 	zle -F $coproc_out _fuzzy-match-coproc-receive
 
-	# Intercept self-insert, {up,down}-line-or-history
+	# Intercept basic editing widgets
 	zle -N self-insert _fuzzy-match-self-insert
+	zle -N backward-delete-char _fuzzy-match-backward-delete-char
+	zle -N vi-backward-delete-char _fuzzy-match-backward-delete-char
+	zle -N delete-char _fuzzy-match-delete-char
+	zle -N vi-delete-char _fuzzy-match-delete-char
 	zle -N up-line-or-history _fuzzy-match-go-up
 	zle -N down-line-or-history _fuzzy-match-go-down
 
@@ -86,6 +90,10 @@ fuzzy-match() {
 
 	# restore default widgets
 	zle -A .self-insert self-insert
+	zle -A .backward-delete-char backward-delete-char
+	zle -A .vi-backward-delete-char vi-backward-delete-char
+	zle -A .delete-char delete-char
+	zle -A .vi-delete-char vi-delete-char
 	zle -A .up-line-or-history up-line-or-history
 	zle -A .down-line-or-history down-line-or-history
 
@@ -122,7 +130,7 @@ _fuzzy-match-coproc-receive() {
 				state[selected_line]=0
 				state[last_selected_line]=0
 				;;
-			APPEND*)
+			APPEND:*)
 				(( state[lines] == state[max_lines] )) && return
 				item=${cmd#APPEND\:}
 				POSTDISPLAY+=$'\n'
@@ -136,7 +144,7 @@ _fuzzy-match-coproc-receive() {
 				fi
 				state[incomplete_line]=''
 				;;
-			GET) # this may come with leading garbage from job control
+			GET)
 				print -p -N "PATTERN:$BUFFER"
 				;;
 		esac
