@@ -10,7 +10,7 @@ _fuzzy-match-update-line-cursor() {
 	selected_start_idx=${POSTDISPLAY[(n:((selected_line)):i)$nl]}
 	(( selected_start_idx += buffer_len ))
 	# end index
-	selected_end_idx=${POSTDISPLAY[(n:((selected_line + 1)):i)$nl]}
+	selected_end_idx=$(( ${POSTDISPLAY[(n:((selected_line + 1)):i)$nl]} - 1))
 	(( selected_end_idx += buffer_len ))
 	state[last_selected_line]=$state[selected_line]
 	region_highlight[1]="$selected_start_idx $selected_end_idx $hi_selected"
@@ -53,10 +53,14 @@ _fuzzy-match-delete-char() {
 	fi
 }
 
-
-# zle -N _fuzzy-match-update-line-cursor
-# zle -N _fuzzy-match-go-up
-# zle -N _fuzzy-match-go-down
-# zle -N _fuzzy-match-self-insert
+_fuzzy-match-accept-line() {
+	# extract the highlighted line
+	local highlighted start end
+	highlighted=(${(z)region_highlight[1]})
+	start=$(( highlighted[1] + 1 ))
+	end=highlighted[2]
+	state[text]="${POSTDISPLAY[$start,$end]}"
+	zle .accept-line
+}
 
 unfunction fuzzy-match-key-handlers

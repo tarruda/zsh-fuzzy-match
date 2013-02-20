@@ -30,9 +30,9 @@ _fuzzy-match-walk() {
 	fi
 	local dpattern="$cwd/(*${PRUNE_REL_DIRS})${PRUNE_DIRS}(/N)"
 	for file in ${~fpattern}; do
-		print -N "APPEND:$file"
+		print -N "APPEND:${file#$CWD/}"
 		# no need to keep searching after the screen is filled with results
-		[ $((++matches)) -ge $MAX_RESULTS ] && exit
+		(( ++matches >= MAX_RESULTS )) && exit
 	done
 	for dir in ${~dpattern}; do
 		_fuzzy-match-walk "$dir" "$pattern" "$matches"
@@ -98,10 +98,14 @@ _fuzzy-match-file-glob() {
 				;;
 			RESTART)
 				kill $finder_pid &> /dev/null
+				(( restarting == 1 )) && continue # already restarting, just ignore
 				if kill -0 $finder_pid &> /dev/null; then
-					(( restarting == 1 )) && continue # already restarting, just ignore
 					restarting=1
 					{
+						# only run a single instance of the finder process at a time,
+						# so we wait until it exits before requesting the search
+						# pattern
+						#
 						# this is done in the background so zle can continue to read keys
 						# without buffering RESTART commands
 						while kill -0 $finder_pid &> /dev/null; do

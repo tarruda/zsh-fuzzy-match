@@ -21,15 +21,16 @@ fuzzy-match() {
 
 	# Save current zle state
 	typeset -Ag old_state state
-	old_state=(
-	LBUFFER "$LBUFFER"
-	RBUFFER "$RBUFFER"
-	PREDISPLAY "$PREDISPLAY"
-	POSTDISPLAY "$POSTDISPLAY"
-	)
+	old_state=()
+	old_state[LBUFFER]=$LBUFFER
+	old_state[RBUFFER]=$RBUFFER
+	old_state[PREDISPLAY]=$PREDISPLAY
+	old_state[POSTDISPLAY]=$POSTDISPLAY
 	if [[ ${#region_highlight} -ne 0 ]]; then 
 		set -a "old_state[region_highlight]" ("${region_highlight[@]}")
 	fi
+	BUFFER=''
+	local action=$2
 
 	# TODO find a way to match newlines in subcript glob patterns without using
 	# this hack
@@ -41,6 +42,7 @@ fuzzy-match() {
 	last_selected_line 0
 	lines 0
 	max_lines $(( LINES - 3 ))
+	text ''
 	)
 
 	# initialize configuration
@@ -75,6 +77,7 @@ fuzzy-match() {
 	zle -F $coproc_out _fuzzy-match-coproc-receive
 
 	# Intercept basic editing widgets
+	zle -N accept-line _fuzzy-match-accept-line
 	zle -N self-insert _fuzzy-match-self-insert
 	zle -N backward-delete-char _fuzzy-match-backward-delete-char
 	zle -N vi-backward-delete-char _fuzzy-match-backward-delete-char
@@ -86,9 +89,9 @@ fuzzy-match() {
 	# use recursive edit, so we inherit the user keymap and override only what is
 	# needed
 	zle recursive-edit
-	local edit_status=$?
 
 	# restore default widgets
+	zle -A .accept-line accept-line
 	zle -A .self-insert self-insert
 	zle -A .backward-delete-char backward-delete-char
 	zle -A .vi-backward-delete-char vi-backward-delete-char
@@ -98,16 +101,21 @@ fuzzy-match() {
 	zle -A .down-line-or-history down-line-or-history
 
 	# restore initial zle state
-	LBUFFER="$old_state[LBUFFER]"
-	RBUFFER="$old_state[RBUFFER]"
-	PREDISPLAY="$old_state[PREDISPLAY]"
-	POSTDISPLAY="$old_state[POSTDISPLAY]"
+	LBUFFER=$old_state[LBUFFER]
+	RBUFFER=$old_state[RBUFFER]
+	PREDISPLAY=$old_state[PREDISPLAY]
+	POSTDISPLAY=$old_state[POSTDISPLAY]
 	if [[ -n $old_state[region_highlight] ]]; then
-		region_highlight=("$old_state[region_highlight][@]")
+		region_highlight=($old_state[region_highlight])
+	else
+		region_highlight=()
 	fi
 
 	# refresh
 	zle -Rc
+
+	# if something was selected, save before deleting the state hashtable
+	local text=$state[text]
 
 	# delete globals set
 	unset old_state state IFS
@@ -115,8 +123,24 @@ fuzzy-match() {
 	# cleanup source process
 	kill $source_pid &> /dev/null
 
-	# if interrupted, just exit and don't do anything else
-	(( edit_status )) && zle send-break
+	if [[ -n $text ]]; then
+		if [[ -z $LBUFFER ]]; then
+			# Nothing was typed, if an action was provided as second argument, invoke
+			# it, else just edit the file
+			if [[ -n $2 ]]; then
+				LBUFFER="$2 ${text:q}"
+			else
+				LBUFFER="${EDITOR:-vi} ${text:q}"
+			fi
+			zle accept-line
+		else
+			# append the filename and let the user confirm
+			LBUFFER+=${text:q}
+			zle -Rc
+		fi
+	else
+		zle send-break
+	fi
 }
 
 _fuzzy-match-coproc-receive() {
@@ -161,7 +185,7 @@ _fuzzy-match-coproc-receive() {
 # length, we use the buffer length for finding that out
 _fuzzy-match-highlight-item() {
 	local idx len end_idx start_idx=$1 item=$2 hi_matched=$state[hi_matched]\
-	 	pattern="(#ia1)(${${BUFFER:q}//\//?})"
+		pattern="(#ia1)(${${BUFFER:q}//\//?})"
 	idx=${item[(I)$pattern]}
 	(( idx > $#item )) && return
 	(( start_idx += idx )) 
