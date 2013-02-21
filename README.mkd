@@ -8,7 +8,7 @@ $ echo 'source $HOME/.zsh-fuzzy-match/fuzzy-match.zsh' >> $HOME/.zshrc
 ###Basic Usage
 
 ^T (CTRL + T) is the default binding to activate the widget, it can be overriden
-by invoking 'bindkey '[KEYS]' fuzzy-match' before sourcing the main file.
+by invoking 'bindkey [KEYS] fuzzy-match' before sourcing the main file.
 
 When the widget is running, type parts of a filename and it will list zsh glob
 matches, which can be selected using arrows.
