@@ -19,6 +19,7 @@ $EDITOR.
 You can also start typing a command(eg: 'rm' or 'vi') and then invoke the
 widget, when the filename is selected it will be appended to your command line
 
+
 ###Configuration
 
 Ignore patterns can be specified with a '.fuzzy-match-ignore' in the working
@@ -57,3 +58,9 @@ Here's a good .global.fuzzy-match-ignore:
 *.pyc                # python compiled
 *.zwc                # zsh compiled
 ```
+
+###Shelr demo
+
+The recording is not perfect but it should give a good idea:
+
+http://shelr.tv/records/512624c6966080252e00006f
