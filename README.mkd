@@ -61,6 +61,7 @@ Here's a good .global.fuzzy-match-ignore:
 
 ###Shelr demo
 
-The recording is not perfect but it should give a good idea:
+The recording is not perfect but it should give a good idea of what the widget
+is about:
 
 http://shelr.tv/records/512624c6966080252e00006f

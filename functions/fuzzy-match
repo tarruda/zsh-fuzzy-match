@@ -125,8 +125,12 @@ fuzzy-match() {
 	# cleanup source process
 	kill $source_pid &> /dev/null
 
+	echo "$@" > /tmp/args
 	if [[ -n $text ]]; then
-		if [[ -z $LBUFFER ]]; then
+		if [[ -n $3 ]]; then
+			# set REPLY and return to the calling widget
+			REPLY=$text
+		elif [[ -z $LBUFFER ]]; then
 			# Nothing was typed, if an action was provided as second argument, invoke
 			# it, else just edit the file
 			if [[ -n $2 ]]; then
