@@ -23,7 +23,7 @@ done
 local default_keys='^T' map
 
 for map in emacs viins vicmd; do
-	bindkey -M $map | grep -q 'fuzzy-match' || bindkey -M $map $default_keys fuzzy-match
+	bindkey -M $map | "grep" -q 'fuzzy-match' || bindkey -M $map $default_keys fuzzy-match
 done
 
 }
