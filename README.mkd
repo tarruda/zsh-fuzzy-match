@@ -1,4 +1,11 @@
-###Install
+##Zsh-Fuzzy-Match
+
+Zsh-Fuzzy-Match is a ZLE widget for interactively finding stuff, inspired by Vim's [CtrlP][control-p]  and [Command-T][command-t] plugins.
+
+[control-p]: https://github.com/kien/ctrlp.vim
+[command-t]: https://github.com/wincent/Command-T
+
+###Installation
 
 ```zsh
 $ git clone git://github.com/tarruda/zsh-fuzzy-match.git $HOME/.zsh-fuzzy-match
@@ -7,8 +14,8 @@ $ echo 'source $HOME/.zsh-fuzzy-match/fuzzy-match.zsh' >> $HOME/.zshrc
 
 ###Basic Usage
 
-^T (CTRL + T) is the default binding to activate the widget, it can be overriden
-by invoking 'bindkey [KEYS] fuzzy-match' before sourcing the main file.
+<kbd>CTRL</kbd>+<kbd>T</kbd> is the default binding to activate the widget, it can be overridden
+by invoking `'bindkey [KEYS] fuzzy-match'` before sourcing the main file.
 
 When the widget is running, type parts of a filename and it will list zsh glob
 matches, which can be selected using arrows.
@@ -17,7 +24,7 @@ If you invoke the widget with an empty zle buffer, it will open the file in your
 $EDITOR.
 
 You can also start typing a command(eg: 'rm' or 'vi') and then invoke the
-widget, when the filename is selected it will be appended to your command line
+widget, when the filename is selected it will be appended to your command line.
 
 
 ###Configuration
@@ -33,7 +40,7 @@ Each line should contain a zsh-like ignore pattern, with the following remarks:
   into directories that match the pattern)
 - Single line comments are allowed with '#'
 
-####Examples:
+####Examples
 
 Ignore all css files inside the 'compiled' directory in the project root:
 
@@ -59,9 +66,9 @@ Here's a good .global.fuzzy-match-ignore:
 *.zwc                # zsh compiled
 ```
 
-###Shelr demo
+###Shelr Demo
 
-The recording is not perfect but it should give a good idea of what the widget
-is about:
+[This recording][shelr] is not perfect but it should give a good idea of what the widget
+is about.
 
-http://shelr.tv/records/512624c6966080252e00006f
+[shelr]: http://shelr.tv/records/512624c6966080252e00006f
