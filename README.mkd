@@ -1,3 +1,5 @@
+This project is not being maintained, for a better alternatize see [fzf](https://github.com/junegunn/fzf)
+
 ##Zsh-Fuzzy-Match
 
 Zsh-Fuzzy-Match is a ZLE widget for interactively finding stuff, inspired by Vim's [CtrlP][control-p]  and [Command-T][command-t] plugins.
