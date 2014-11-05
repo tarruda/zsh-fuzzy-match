@@ -1,4 +1,7 @@
-This project is not being maintained, for a better alternatize see [fzf](https://github.com/junegunn/fzf)
+This project alpha software and not being maintained, I don't recommend using it. Here are better alternatives:
+
+- [fzf](https://github.com/junegunn/fzf)
+- [selecta](https://github.com/garybernhardt/selecta)
 
 ##Zsh-Fuzzy-Match
 
@@ -68,9 +71,3 @@ Here's a good .global.fuzzy-match-ignore:
 *.zwc                # zsh compiled
 ```
 
-###Shelr Demo
-
-[This recording][shelr] is not perfect but it should give a good idea of what the widget
-is about.
-
-[shelr]: http://shelr.tv/records/512624c6966080252e00006f
