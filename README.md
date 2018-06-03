@@ -1,23 +1,25 @@
+# ZSH Fuzzy Match
+
 This project alpha software and not being maintained, I don't recommend using it. Here are better alternatives:
 
 - [fzf](https://github.com/junegunn/fzf)
 - [selecta](https://github.com/garybernhardt/selecta)
 
-##Zsh-Fuzzy-Match
+## Zsh-Fuzzy-Match
 
 Zsh-Fuzzy-Match is a ZLE widget for interactively finding stuff, inspired by Vim's [CtrlP][control-p]  and [Command-T][command-t] plugins.
 
 [control-p]: https://github.com/kien/ctrlp.vim
 [command-t]: https://github.com/wincent/Command-T
 
-###Installation
+### Installation
 
 ```zsh
 $ git clone git://github.com/tarruda/zsh-fuzzy-match.git $HOME/.zsh-fuzzy-match
 $ echo 'source $HOME/.zsh-fuzzy-match/fuzzy-match.zsh' >> $HOME/.zshrc
 ```
 
-###Basic Usage
+### Basic Usage
 
 <kbd>CTRL</kbd>+<kbd>T</kbd> is the default binding to activate the widget, it can be overridden
 by invoking `'bindkey [KEYS] fuzzy-match'` before sourcing the main file.
@@ -32,7 +34,7 @@ You can also start typing a command(eg: 'rm' or 'vi') and then invoke the
 widget, when the filename is selected it will be appended to your command line.
 
 
-###Configuration
+### Configuration
 
 Ignore patterns can be specified with a '.fuzzy-match-ignore' in the working
 directory or '.global.fuzzy-match-ignore' in home directory.
@@ -45,7 +47,7 @@ Each line should contain a zsh-like ignore pattern, with the following remarks:
   into directories that match the pattern)
 - Single line comments are allowed with '#'
 
-####Examples
+#### Examples
 
 Ignore all css files inside the 'compiled' directory in the project root:
 
